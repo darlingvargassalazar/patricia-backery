@@ -5,6 +5,17 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  /* Default brand: PattyBakery brown — overridden per company in dashboard layout */
+  --brand-50: hsl(30,60%,97%);
+  --brand-100: hsl(30,55%,93%);
+  --brand-200: hsl(30,50%,84%);
+  --brand-300: hsl(30,45%,72%);
+  --brand-400: hsl(30,42%,62%);
+  --brand-500: hsl(30,38%,51%);
+  --brand-600: hsl(30,35%,41%);
+  --brand-700: hsl(30,38%,31%);
+  --brand-800: hsl(30,38%,21%);
+  --brand-900: hsl(30,38%,13%);
 }
 
 @media (prefers-color-scheme: dark) {

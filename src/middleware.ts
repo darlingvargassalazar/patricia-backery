@@ -27,7 +27,8 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  const isLoginPage = request.nextUrl.pathname === '/login'
+  const pathname = request.nextUrl.pathname
+  const isLoginPage = pathname === '/login'
 
   if (!user && !isLoginPage) {
     const url = request.nextUrl.clone()
@@ -40,6 +41,8 @@ export async function middleware(request: NextRequest) {
     url.pathname = '/dashboard'
     return NextResponse.redirect(url)
   }
+
+  // /admin is protected at the layout level (super_admin role check)
 
   return supabaseResponse
 }

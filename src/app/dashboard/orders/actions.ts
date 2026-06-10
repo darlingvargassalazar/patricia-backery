@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
+import { getMyCompanyId } from '@/lib/company'
 
 export type OrderItem = {
   name: string
@@ -16,8 +17,10 @@ export async function createOrder(data: {
   deposit: number
   notes: string
   items: OrderItem[]
+  is_gift: boolean
 }) {
   const supabase = createClient()
+  const companyId = await getMyCompanyId()
 
   const { data: existing } = await supabase
     .from('customers')
@@ -31,22 +34,24 @@ export async function createOrder(data: {
   } else {
     const { data: created } = await supabase
       .from('customers')
-      .insert({ name: data.customer_name.trim() })
+      .insert({ name: data.customer_name.trim(), company_id: companyId })
       .select('id')
       .single()
     customerId = created!.id
   }
 
-  const total = data.items.reduce((sum, item) => sum + item.quantity * item.unit_price, 0)
+  const total = data.is_gift ? 0 : data.items.reduce((sum, item) => sum + item.quantity * item.unit_price, 0)
 
   const { data: order } = await supabase
     .from('orders')
     .insert({
       customer_id: customerId,
       delivery_date: data.delivery_date,
-      deposit: data.deposit || 0,
+      deposit: data.is_gift ? 0 : (data.deposit || 0),
       total,
       notes: data.notes || null,
+      is_gift: data.is_gift,
+      company_id: companyId,
     })
     .select('id')
     .single()
@@ -66,6 +71,17 @@ export async function createOrder(data: {
 export async function updateOrderStatus(orderId: string, status: string) {
   const supabase = createClient()
   await supabase.from('orders').update({ status }).eq('id', orderId)
+  revalidatePath(`/dashboard/orders/${orderId}`)
+  revalidatePath('/dashboard/orders')
+}
+
+export async function toggleOrderGift(orderId: string, isGift: boolean) {
+  const supabase = createClient()
+  await supabase.from('orders').update({
+    is_gift: isGift,
+    total: isGift ? 0 : undefined,
+    deposit: isGift ? 0 : undefined,
+  }).eq('id', orderId)
   revalidatePath(`/dashboard/orders/${orderId}`)
   revalidatePath('/dashboard/orders')
 }

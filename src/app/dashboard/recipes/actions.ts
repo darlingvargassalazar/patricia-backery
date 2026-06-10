@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import { getMyCompanyId } from '@/lib/company'
 
 export type RecipeIngredient = {
   product_id: string | null
@@ -23,11 +24,13 @@ export async function createRecipe(data: {
   ingredients: RecipeIngredient[]
 }) {
   const supabase = createClient()
+  const companyId = await getMyCompanyId()
 
   const { data: recipe } = await supabase
     .from('recipes')
     .insert({
       name: data.name.trim(),
+      company_id: companyId,
       notes: data.notes?.trim() || null,
       portions: data.portions,
       ingredient_cost: data.ingredient_cost,

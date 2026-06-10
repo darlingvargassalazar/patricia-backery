@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import { getMyCompanyId } from '@/lib/company'
 
 export type InvoiceItem = {
   description: string
@@ -18,6 +19,7 @@ export async function createInvoice(data: {
   items: InvoiceItem[]
 }) {
   const supabase = createClient()
+  const companyId = await getMyCompanyId()
 
   const total = data.items.reduce((sum, i) => sum + i.quantity * i.unit_price, 0)
 
@@ -30,6 +32,7 @@ export async function createInvoice(data: {
       issue_date: data.issue_date,
       total,
       notes: data.notes.trim() || null,
+      company_id: companyId,
     })
     .select('id')
     .single()

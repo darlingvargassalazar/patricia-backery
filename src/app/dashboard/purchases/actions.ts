@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import { getMyCompanyId } from '@/lib/company'
 
 export type PurchaseItem = {
   product_id: string | null
@@ -18,6 +19,7 @@ export async function createPurchase(data: {
   items: PurchaseItem[]
 }) {
   const supabase = createClient()
+  const companyId = await getMyCompanyId()
 
   const total = data.items.reduce((sum, i) => sum + i.quantity * i.unit_price, 0)
 
@@ -28,6 +30,7 @@ export async function createPurchase(data: {
       purchase_date: data.purchase_date,
       total,
       notes: data.notes.trim() || null,
+      company_id: companyId,
     })
     .select('id')
     .single()

@@ -3,9 +3,11 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
+import { getMyCompanyId } from '@/lib/company'
 
 export async function createProduct(formData: FormData) {
   const supabase = createClient()
+  const companyId = await getMyCompanyId()
   const type = formData.get('type') as string
   await supabase.from('products').insert({
     name: (formData.get('name') as string).trim(),
@@ -14,6 +16,7 @@ export async function createProduct(formData: FormData) {
     current_stock: Number(formData.get('current_stock')) || 0,
     unit: type === 'raw_material' ? (formData.get('unit') as string) : null,
     min_stock: type === 'raw_material' ? Number(formData.get('min_stock')) || 0 : 0,
+    company_id: companyId,
   })
   redirect(type === 'raw_material' ? '/dashboard/inventory' : '/dashboard/products')
 }

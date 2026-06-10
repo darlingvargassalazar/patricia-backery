@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { updateOrderStatus } from '../actions'
+import { updateOrderStatus, toggleOrderGift } from '../actions'
 
 const STATUS_LABEL: Record<string, string> = {
   pending: 'Pendiente',
@@ -76,21 +76,31 @@ export default async function OrderDetailPage({ params }: { params: { id: string
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-brand-100 p-4 mb-4">
-        <h2 className="text-sm font-medium text-gray-700 mb-3">Pago</h2>
-        <div className="space-y-1.5 text-sm">
-          <div className="flex justify-between">
-            <span className="text-gray-500">Adelanto recibido</span>
-            <span className="text-green-600 font-medium">${deposit.toLocaleString('es-CO')}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-gray-700 font-medium">Por cobrar</span>
-            <span className={`font-semibold ${pending > 0 ? 'text-brand-600' : 'text-green-600'}`}>
-              ${pending.toLocaleString('es-CO')}
-            </span>
+      {order.is_gift ? (
+        <div className="bg-pink-50 rounded-xl border border-pink-200 p-4 mb-4 flex items-center gap-3">
+          <span className="text-2xl">🎁</span>
+          <div>
+            <p className="text-sm font-semibold text-pink-700">Pedido obsequio</p>
+            <p className="text-xs text-pink-500 mt-0.5">Este pedido es gratuito</p>
           </div>
         </div>
-      </div>
+      ) : (
+        <div className="bg-white rounded-xl border border-brand-100 p-4 mb-4">
+          <h2 className="text-sm font-medium text-gray-700 mb-3">Pago</h2>
+          <div className="space-y-1.5 text-sm">
+            <div className="flex justify-between">
+              <span className="text-gray-500">Adelanto recibido</span>
+              <span className="text-green-600 font-medium">${deposit.toLocaleString('es-CO')}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-700 font-medium">Por cobrar</span>
+              <span className={`font-semibold ${pending > 0 ? 'text-brand-600' : 'text-green-600'}`}>
+                ${pending.toLocaleString('es-CO')}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {order.notes && (
         <div className="bg-white rounded-xl border border-brand-100 p-4 mb-4">
@@ -107,6 +117,12 @@ export default async function OrderDetailPage({ params }: { params: { id: string
             </button>
           </form>
         ))}
+
+        <form action={toggleOrderGift.bind(null, order.id, !order.is_gift)}>
+          <button type="submit" className={`w-full text-sm font-medium py-2.5 rounded-xl border transition-colors ${order.is_gift ? 'bg-white hover:bg-pink-50 text-pink-500 border-pink-200' : 'bg-white hover:bg-pink-50 text-gray-500 border-gray-200'}`}>
+            {order.is_gift ? '↩ Quitar obsequio' : '🎁 Marcar como obsequio (gratis)'}
+          </button>
+        </form>
 
         {status !== 'cancelled' && status !== 'delivered' && (
           <form action={updateOrderStatus.bind(null, order.id, 'cancelled')}>

@@ -65,10 +65,15 @@ export default async function OrdersPage() {
                   <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_COLOR[status] ?? 'bg-gray-100 text-gray-500'}`}>
                     {STATUS_LABEL[status] ?? status}
                   </span>
-                  <p className="text-sm font-semibold text-gray-700">${order.total.toLocaleString('es-CO')}</p>
-                  {pending > 0 && (
-                    <p className="text-xs text-brand-500">Falta ${pending.toLocaleString('es-CO')}</p>
-                  )}
+                  {order.is_gift
+                    ? <span className="text-sm font-semibold text-pink-500">Gratis 🎁</span>
+                    : <>
+                        <p className="text-sm font-semibold text-gray-700">${order.total.toLocaleString('es-CO')}</p>
+                        {pending > 0 && (
+                          <p className="text-xs text-brand-500">Falta ${pending.toLocaleString('es-CO')}</p>
+                        )}
+                      </>
+                  }
                 </div>
               </Link>
             )
