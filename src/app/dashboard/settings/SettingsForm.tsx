@@ -141,7 +141,7 @@ export default function SettingsForm({ company }: Props) {
             <ol className="list-decimal list-inside space-y-0.5 text-gray-500">
               <li>Ve a <strong>myaccount.google.com</strong> → Seguridad</li>
               <li>Activa la verificación en 2 pasos (si no está activa)</li>
-              <li>Busca <strong>"Contraseñas de aplicación"</strong></li>
+              <li>Busca <strong>&quot;Contraseñas de aplicación&quot;</strong></li>
               <li>Crea una nueva → copia las 16 letras que aparecen</li>
             </ol>
           </div>
