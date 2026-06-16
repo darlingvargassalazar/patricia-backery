@@ -36,6 +36,7 @@ export default async function DashboardPage() {
   const [
     { data: activeOrders },
     { data: upcomingOrders },
+    { data: pendingPaymentOrders },
     { data: lowStock },
   ] = await Promise.all([
     supabase
@@ -48,6 +49,12 @@ export default async function DashboardPage() {
       .not('status', 'in', '("delivered","cancelled")')
       .gte('delivery_date', today)
       .lte('delivery_date', in2days)
+      .order('delivery_date', { ascending: true }),
+    supabase
+      .from('orders')
+      .select('id, delivery_date, total, deposit, is_gift, customers(name)')
+      .not('status', 'in', '("delivered","cancelled")')
+      .eq('is_gift', false)
       .order('delivery_date', { ascending: true }),
     supabase
       .from('products')
@@ -63,6 +70,9 @@ export default async function DashboardPage() {
   const todayOrders = (upcomingOrders ?? []).filter((o) => o.delivery_date === today)
   const lowStockItems = (lowStock ?? []).filter(
     (m) => (m.current_stock ?? 0) <= (m.min_stock ?? 0)
+  )
+  const unpaidOrders = (pendingPaymentOrders ?? []).filter(
+    (o) => o.total - (o.deposit ?? 0) > 0
   )
 
   const stats = [
@@ -162,6 +172,45 @@ export default async function DashboardPage() {
           </div>
         )}
       </div>
+
+      {/* Pending payments */}
+      {unpaidOrders.length > 0 && (
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-semibold text-gray-700">💰 Pendiente por cobrar</h2>
+            <Link href="/dashboard/orders" className="text-xs text-brand-500 hover:text-brand-700">Ver pedidos →</Link>
+          </div>
+          <div className="bg-white rounded-xl border border-brand-100 divide-y divide-gray-50">
+            {unpaidOrders.map((order) => {
+              const pending = order.total - (order.deposit ?? 0)
+              return (
+                <Link
+                  key={order.id}
+                  href={`/dashboard/orders/${order.id}`}
+                  className="flex items-center justify-between px-4 py-3 hover:bg-brand-50 transition-colors first:rounded-t-xl last:rounded-b-xl"
+                >
+                  <div>
+                    <p className="text-sm font-medium text-gray-800">{(order.customers as any)?.name ?? '—'}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      Entrega: {new Date(order.delivery_date + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-bold text-brand-600">${pending.toLocaleString('es-CO')}</p>
+                    {(order.deposit ?? 0) > 0 && (
+                      <p className="text-xs text-gray-400">adelanto ${(order.deposit ?? 0).toLocaleString('es-CO')}</p>
+                    )}
+                  </div>
+                </Link>
+              )
+            })}
+            <div className="flex justify-between items-center px-4 py-2.5 bg-brand-50 rounded-b-xl">
+              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Total por cobrar</span>
+              <span className="text-sm font-bold text-brand-700">${Math.round(totalPending).toLocaleString('es-CO')}</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Low stock */}
       {lowStockItems.length > 0 && (

@@ -263,9 +263,9 @@ export default function RecipeForm({
                       {/* Cantidad en receta */}
                       <td className="px-3 py-2">
                         <div className="flex items-center gap-1">
-                          <input type="number" min="0" step="1" value={ing.quantity || ''} required
+                          <input type="number" min="0" step="any" value={ing.quantity || ''} required
                             onChange={(e) => updateIngredient(ing._key, { quantity: Number(e.target.value) })}
-                            className="w-16 px-1.5 py-1.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-400" />
+                            className="w-16 min-w-0 px-1.5 py-1.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-400" />
                           {ing.product_id ? (
                             <span className="text-xs text-gray-500 bg-gray-50 border border-gray-100 px-1.5 py-1.5 rounded-lg">{ing.unit}</span>
                           ) : (

@@ -7,6 +7,9 @@ export type Company = {
   logo_url: string | null
   primary_color: string
   active: boolean
+  email_api_key: string | null
+  email_from: string | null
+  email_from_name: string | null
 }
 
 export type UserProfile = {

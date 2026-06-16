@@ -1,7 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { updateOrderStatus, toggleOrderGift } from '../actions'
+import { updateOrderStatus, toggleOrderGift, markOrderPaid } from '../actions'
+import ResendEmailButton from './ResendEmailButton'
 
 const STATUS_LABEL: Record<string, string> = {
   pending: 'Pendiente',
@@ -31,7 +32,7 @@ export default async function OrderDetailPage({ params }: { params: { id: string
   const supabase = createClient()
   const { data: order } = await supabase
     .from('orders')
-    .select('*, customers(name), order_items(*)')
+    .select('*, customers(name, email), order_items(*)')
     .eq('id', params.id)
     .single()
 
@@ -40,17 +41,26 @@ export default async function OrderDetailPage({ params }: { params: { id: string
   const status = order.status ?? 'pending'
   const deposit = order.deposit ?? 0
   const pending = order.total - deposit
+  const customerEmail = (order.customers as any)?.email as string | null
 
   return (
     <div>
       <div className="flex items-start gap-3 mb-6">
         <Link href="/dashboard/orders" className="text-gray-400 hover:text-gray-600 text-xl leading-none mt-1">←</Link>
         <div className="flex-1">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-2">
             <h1 className="text-xl font-bold text-gray-800">{(order.customers as any)?.name}</h1>
-            <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${STATUS_COLOR[status] ?? 'bg-gray-100'}`}>
-              {STATUS_LABEL[status] ?? status}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${STATUS_COLOR[status] ?? 'bg-gray-100'}`}>
+                {STATUS_LABEL[status] ?? status}
+              </span>
+              <Link
+                href={`/dashboard/orders/${order.id}/edit`}
+                className="text-xs font-medium px-2.5 py-1 rounded-full bg-gray-100 text-gray-500 hover:bg-brand-100 hover:text-brand-700 transition-colors"
+              >
+                Editar
+              </Link>
+            </div>
           </div>
           <p className="text-sm text-gray-500 mt-0.5">
             Entrega: {new Date(order.delivery_date + 'T12:00:00').toLocaleDateString('es-CO', {
@@ -95,10 +105,17 @@ export default async function OrderDetailPage({ params }: { params: { id: string
             <div className="flex justify-between">
               <span className="text-gray-700 font-medium">Por cobrar</span>
               <span className={`font-semibold ${pending > 0 ? 'text-brand-600' : 'text-green-600'}`}>
-                ${pending.toLocaleString('es-CO')}
+                {pending > 0 ? `$${pending.toLocaleString('es-CO')}` : 'Pagado'}
               </span>
             </div>
           </div>
+          {pending > 0 && (
+            <form action={markOrderPaid.bind(null, order.id)} className="mt-3">
+              <button type="submit" className="w-full bg-green-600 hover:bg-green-700 text-white text-sm font-medium py-2 rounded-lg transition-colors">
+                Marcar como pagado
+              </button>
+            </form>
+          )}
         </div>
       )}
 
@@ -123,6 +140,10 @@ export default async function OrderDetailPage({ params }: { params: { id: string
             {order.is_gift ? '↩ Quitar obsequio' : '🎁 Marcar como obsequio (gratis)'}
           </button>
         </form>
+
+        {customerEmail && (
+          <ResendEmailButton orderId={order.id} customerEmail={customerEmail} />
+        )}
 
         {status !== 'cancelled' && status !== 'delivered' && (
           <form action={updateOrderStatus.bind(null, order.id, 'cancelled')}>
