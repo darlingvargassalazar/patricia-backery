@@ -42,6 +42,10 @@ export default async function OrderDetailPage({ params }: { params: { id: string
   const deposit = order.deposit ?? 0
   const pending = order.total - deposit
   const customerEmail = (order.customers as any)?.email as string | null
+  const allItems = order.order_items as any[]
+  const shippingItem = allItems.find((i) => i.name === 'Envío')
+  const productItems = allItems.filter((i) => i.name !== 'Envío')
+  const subtotal = productItems.reduce((s: number, i: any) => s + i.unit_price * i.quantity, 0)
 
   return (
     <div>
@@ -73,16 +77,30 @@ export default async function OrderDetailPage({ params }: { params: { id: string
       <div className="bg-white rounded-xl border border-brand-100 p-4 mb-4">
         <h2 className="text-sm font-medium text-gray-700 mb-3">Productos</h2>
         <div className="space-y-2">
-          {(order.order_items as any[]).map((item) => (
+          {productItems.map((item: any) => (
             <div key={item.id} className="flex justify-between text-sm">
               <span className="text-gray-700">{item.name} <span className="text-gray-400">× {item.quantity}</span></span>
               <span className="text-gray-600 font-medium">${(item.unit_price * item.quantity).toLocaleString('es-CO')}</span>
             </div>
           ))}
         </div>
-        <div className="border-t border-gray-100 mt-3 pt-3 flex justify-between font-semibold text-sm">
-          <span>Total</span>
-          <span>${order.total.toLocaleString('es-CO')}</span>
+        <div className="border-t border-gray-100 mt-3 pt-3 space-y-1.5">
+          {shippingItem && (
+            <>
+              <div className="flex justify-between text-sm text-gray-500">
+                <span>Subtotal</span>
+                <span>${subtotal.toLocaleString('es-CO')}</span>
+              </div>
+              <div className="flex justify-between text-sm text-gray-500">
+                <span className="flex items-center gap-1">🚚 Envío</span>
+                <span>${(shippingItem.unit_price).toLocaleString('es-CO')}</span>
+              </div>
+            </>
+          )}
+          <div className="flex justify-between font-semibold text-sm pt-1 border-t border-gray-100">
+            <span>Total</span>
+            <span>${order.total.toLocaleString('es-CO')}</span>
+          </div>
         </div>
       </div>
 

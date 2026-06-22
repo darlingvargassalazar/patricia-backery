@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { logout } from '@/app/login/actions'
 
@@ -28,7 +27,8 @@ export default function NavMenu({ companyName, logoUrl, isSuperAdmin }: Props) {
       <nav className="bg-white border-b border-brand-100 px-4 py-3 flex items-center justify-between sticky top-0 z-10">
         <Link href="/dashboard" onClick={() => setOpen(false)} className="flex items-center gap-2">
           {logoUrl ? (
-            <Image src={logoUrl} alt={companyName} width={120} height={36} className="object-contain h-9 w-auto" priority />
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={logoUrl} alt={companyName} className="object-contain h-9 w-auto" />
           ) : (
             <span className="font-bold text-brand-700 text-lg">{companyName}</span>
           )}
@@ -59,7 +59,8 @@ export default function NavMenu({ companyName, logoUrl, isSuperAdmin }: Props) {
           >
             <div className="flex items-center justify-between px-5 py-4 border-b border-brand-100">
               {logoUrl ? (
-                <Image src={logoUrl} alt={companyName} width={120} height={36} className="object-contain h-9 w-auto" />
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={logoUrl} alt={companyName} className="object-contain h-9 w-auto" />
               ) : (
                 <span className="font-bold text-brand-700">{companyName}</span>
               )}
