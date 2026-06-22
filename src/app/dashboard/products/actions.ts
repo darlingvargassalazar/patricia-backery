@@ -5,36 +5,46 @@ import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { getMyCompanyId } from '@/lib/company'
 
-export async function createProduct(formData: FormData) {
-  const supabase = createClient()
-  const companyId = await getMyCompanyId()
-  const type = formData.get('type') as string
-  await supabase.from('products').insert({
-    name: (formData.get('name') as string).trim(),
-    type,
-    price: type === 'sale' ? Number(formData.get('price')) : 0,
-    current_stock: Number(formData.get('current_stock')) || 0,
-    unit: type === 'raw_material' ? (formData.get('unit') as string) : null,
-    min_stock: type === 'raw_material' ? Number(formData.get('min_stock')) || 0 : 0,
-    company_id: companyId,
-  })
-  redirect(type === 'raw_material' ? '/dashboard/inventory' : '/dashboard/products')
+type ProductPayload = {
+  name: string
+  type: string
+  price: number
+  current_stock: number
+  unit?: string | null
+  min_stock?: number
+  image_url?: string | null
 }
 
-export async function updateProduct(id: string, formData: FormData) {
+export async function createProduct(data: ProductPayload) {
   const supabase = createClient()
-  const type = formData.get('type') as string
+  const companyId = await getMyCompanyId()
+  await supabase.from('products').insert({
+    name: data.name.trim(),
+    type: data.type,
+    price: data.type === 'sale' ? data.price : 0,
+    current_stock: data.current_stock || 0,
+    unit: data.type === 'raw_material' ? (data.unit ?? null) : null,
+    min_stock: data.type === 'raw_material' ? (data.min_stock ?? 0) : 0,
+    image_url: data.image_url ?? null,
+    company_id: companyId,
+  })
+  redirect(data.type === 'raw_material' ? '/dashboard/inventory' : '/dashboard/products')
+}
+
+export async function updateProduct(id: string, data: ProductPayload) {
+  const supabase = createClient()
   await supabase.from('products').update({
-    name: (formData.get('name') as string).trim(),
-    type,
-    price: type === 'sale' ? Number(formData.get('price')) : 0,
-    current_stock: Number(formData.get('current_stock')) || 0,
-    unit: type === 'raw_material' ? (formData.get('unit') as string) : null,
-    min_stock: type === 'raw_material' ? Number(formData.get('min_stock')) || 0 : 0,
+    name: data.name.trim(),
+    type: data.type,
+    price: data.type === 'sale' ? data.price : 0,
+    current_stock: data.current_stock || 0,
+    unit: data.type === 'raw_material' ? (data.unit ?? null) : null,
+    min_stock: data.type === 'raw_material' ? (data.min_stock ?? 0) : 0,
+    image_url: data.image_url ?? null,
   }).eq('id', id)
   revalidatePath('/dashboard/products')
   revalidatePath('/dashboard/inventory')
-  redirect(type === 'raw_material' ? '/dashboard/inventory' : '/dashboard/products')
+  redirect(data.type === 'raw_material' ? '/dashboard/inventory' : '/dashboard/products')
 }
 
 export async function toggleProductActive(id: string, active: boolean) {
