@@ -6,6 +6,7 @@ import { createOrder, updateOrder, type OrderItem } from './actions'
 
 type Product = { id: string; name: string; price: number }
 type Customer = { id: string; name: string; email: string | null; phone: string | null }
+type LocalItem = OrderItem & { is_shipping?: boolean }
 
 export type OrderFormInitialData = {
   customer_name: string
@@ -161,8 +162,10 @@ export default function OrderForm({
   const [deliveryDate, setDeliveryDate] = useState(initialData?.delivery_date ?? '')
   const [deposit, setDeposit] = useState(initialData?.deposit ?? 0)
   const [notes, setNotes] = useState(initialData?.notes ?? '')
-  const [items, setItems] = useState<OrderItem[]>(
-    initialData?.items.length ? initialData.items : [{ name: '', quantity: 1, unit_price: 0 }]
+  const [items, setItems] = useState<LocalItem[]>(
+    initialData?.items.length
+      ? initialData.items.map((i) => ({ ...i, is_shipping: i.name === 'Envío' }))
+      : [{ name: '', quantity: 1, unit_price: 0 }]
   )
   const [isGift, setIsGift] = useState(initialData?.is_gift ?? false)
   const [loading, setLoading] = useState(false)
@@ -170,6 +173,10 @@ export default function OrderForm({
   const total = isGift ? 0 : items.reduce((sum, item) => sum + item.quantity * item.unit_price, 0)
 
   function addItem() { setItems([...items, { name: '', quantity: 1, unit_price: 0 }]) }
+  function addShipping() {
+    if (items.some((i) => i.is_shipping)) return
+    setItems([...items, { name: 'Envío', quantity: 1, unit_price: 0, is_shipping: true }])
+  }
   function removeItem(index: number) { setItems(items.filter((_, i) => i !== index)) }
   function updateItem(index: number, field: keyof OrderItem, value: string | number) {
     const updated = [...items]
@@ -182,6 +189,8 @@ export default function OrderForm({
     setItems(updated)
   }
 
+  const hasShipping = items.some((i) => i.is_shipping)
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
@@ -192,7 +201,8 @@ export default function OrderForm({
       delivery_date: deliveryDate,
       deposit,
       notes,
-      items,
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      items: items.map(({ is_shipping: _s, ...rest }) => rest),
       is_gift: isGift,
     }
     if (orderId) {
@@ -268,41 +278,68 @@ export default function OrderForm({
             <span className="col-span-4 text-right">Precio unit.</span>
           </div>
 
-          {items.map((item, index) => (
-            <div key={index} className="grid grid-cols-12 gap-1 items-center">
-              <ProductCombobox
-                value={item.name}
-                products={products}
-                onChange={(name, price) => selectProduct(index, name, price)}
-              />
-              <input
-                type="number"
-                min="1"
-                value={item.quantity}
-                onChange={(e) => updateItem(index, 'quantity', Number(e.target.value))}
-                className="col-span-2 px-2 py-2 border border-gray-200 rounded-lg text-sm text-center focus:outline-none focus:ring-2 focus:ring-brand-400"
-              />
-              <input
-                type="number"
-                min="0"
-                step="500"
-                placeholder="0"
-                value={item.unit_price || ''}
-                onChange={(e) => updateItem(index, 'unit_price', Number(e.target.value))}
-                required
-                className="col-span-3 px-2 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-400"
-              />
-              {items.length > 1 ? (
+          {items.map((item, index) =>
+            item.is_shipping ? (
+              <div key={index} className="grid grid-cols-12 gap-1 items-center">
+                <div className="col-span-8 flex items-center gap-2 px-2 py-2 bg-gray-50 border border-gray-200 rounded-lg">
+                  <span className="text-base">🚚</span>
+                  <span className="text-sm text-gray-600 font-medium">Envío</span>
+                </div>
+                <input
+                  type="number"
+                  min="0"
+                  step="500"
+                  placeholder="0"
+                  value={item.unit_price || ''}
+                  onChange={(e) => updateItem(index, 'unit_price', Number(e.target.value))}
+                  required
+                  className="col-span-3 px-2 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-400"
+                />
                 <button type="button" onClick={() => removeItem(index)} className="col-span-1 text-gray-300 hover:text-red-400 text-lg text-center">×</button>
-              ) : (
-                <span className="col-span-1" />
-              )}
-            </div>
-          ))}
+              </div>
+            ) : (
+              <div key={index} className="grid grid-cols-12 gap-1 items-center">
+                <ProductCombobox
+                  value={item.name}
+                  products={products}
+                  onChange={(name, price) => selectProduct(index, name, price)}
+                />
+                <input
+                  type="number"
+                  min="1"
+                  value={item.quantity}
+                  onChange={(e) => updateItem(index, 'quantity', Number(e.target.value))}
+                  className="col-span-2 px-2 py-2 border border-gray-200 rounded-lg text-sm text-center focus:outline-none focus:ring-2 focus:ring-brand-400"
+                />
+                <input
+                  type="number"
+                  min="0"
+                  step="500"
+                  placeholder="0"
+                  value={item.unit_price || ''}
+                  onChange={(e) => updateItem(index, 'unit_price', Number(e.target.value))}
+                  required
+                  className="col-span-3 px-2 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-400"
+                />
+                {items.filter((i) => !i.is_shipping).length > 1 ? (
+                  <button type="button" onClick={() => removeItem(index)} className="col-span-1 text-gray-300 hover:text-red-400 text-lg text-center">×</button>
+                ) : (
+                  <span className="col-span-1" />
+                )}
+              </div>
+            )
+          )}
 
-          <button type="button" onClick={addItem} className="text-sm text-brand-500 hover:text-brand-700 font-medium">
-            + Agregar producto
-          </button>
+          <div className="flex gap-3">
+            <button type="button" onClick={addItem} className="text-sm text-brand-500 hover:text-brand-700 font-medium">
+              + Agregar producto
+            </button>
+            {!hasShipping && (
+              <button type="button" onClick={addShipping} className="text-sm text-gray-400 hover:text-gray-600 font-medium">
+                🚚 Agregar envío
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Entrega y pago */}

@@ -17,17 +17,53 @@ const STATUS_COLOR: Record<string, string> = {
   cancelled: 'bg-red-100 text-red-600',
 }
 
-export default async function OrdersPage() {
+const STATUS_ORDER: Record<string, number> = {
+  preparing: 0,
+  pending: 1,
+  ready: 2,
+  delivered: 3,
+  cancelled: 4,
+}
+
+const FILTER_TABS = [
+  { value: '', label: 'Activos' },
+  { value: 'preparing', label: 'En preparación' },
+  { value: 'pending', label: 'Pendientes' },
+  { value: 'ready', label: 'Listos' },
+  { value: 'delivered', label: 'Entregados' },
+  { value: 'cancelled', label: 'Cancelados' },
+]
+
+export default async function OrdersPage({
+  searchParams,
+}: {
+  searchParams: { status?: string }
+}) {
   const supabase = createClient()
-  const { data: orders } = await supabase
+  const activeFilter = searchParams.status ?? ''
+
+  let query = supabase
     .from('orders')
     .select('*, customers(name)')
-    .not('status', 'eq', 'cancelled')
     .order('delivery_date', { ascending: true })
+
+  if (activeFilter) {
+    query = query.eq('status', activeFilter)
+  } else {
+    query = query.not('status', 'eq', 'cancelled')
+  }
+
+  const { data: rawOrders } = await query
+
+  const orders = (rawOrders ?? []).sort(
+    (a, b) =>
+      (STATUS_ORDER[a.status ?? 'pending'] ?? 99) -
+      (STATUS_ORDER[b.status ?? 'pending'] ?? 99)
+  )
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4">
         <h1 className="text-xl font-bold text-gray-800">Pedidos</h1>
         <Link
           href="/dashboard/orders/new"
@@ -37,10 +73,26 @@ export default async function OrdersPage() {
         </Link>
       </div>
 
-      {!orders?.length ? (
+      <div className="flex gap-2 overflow-x-auto pb-2 mb-4">
+        {FILTER_TABS.map((tab) => (
+          <Link
+            key={tab.value}
+            href={tab.value ? `/dashboard/orders?status=${tab.value}` : '/dashboard/orders'}
+            className={`flex-shrink-0 text-xs font-medium px-3 py-1.5 rounded-full border transition-colors ${
+              activeFilter === tab.value
+                ? 'bg-brand-600 text-white border-brand-600'
+                : 'bg-white text-gray-600 border-gray-200 hover:border-brand-300'
+            }`}
+          >
+            {tab.label}
+          </Link>
+        ))}
+      </div>
+
+      {!orders.length ? (
         <div className="bg-white rounded-2xl border border-brand-100 p-12 text-center">
           <div className="text-4xl mb-3">📋</div>
-          <p className="text-gray-500 text-sm">No hay pedidos aún. ¡Crea el primero!</p>
+          <p className="text-gray-500 text-sm">No hay pedidos en este estado.</p>
         </div>
       ) : (
         <div className="space-y-3">
